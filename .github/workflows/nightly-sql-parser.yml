@@ -15,28 +15,16 @@
 # limitations under the License.
 #
 
-name: CI
+name: Nightly - SQL parser loading from external cases
 
 on:
-  pull_request:
-    branches: [master]
-    paths:
-      - '.github/workflows/ci.yml'
-      - '**/pom.xml'
-      - '**/src/main/**'
-      - '**/src/test/**'
-      - '!distribution/**'
-      - 'test/it/**'
-      - '!test/e2e/**'
-      - 'test/e2e/driver/**'
-      - '!*.md'
-  repository_dispatch:
-    types: ci-completed
+  schedule:
+    - cron: '0 18 * * 1-5' # Once a day between Monday and Friday. UTC time
   workflow_dispatch:
   push:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: nightly-sql-parser-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -45,27 +33,40 @@ permissions:
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
     -Dmaven.wagon.http.retryHandler.count=3 -Dspotless.apply.skip=true
+  RUNS_ON: ubuntu-latest
 
 jobs:
   global-environment:
     name: Import Global Environment
     uses: ./.github/workflows/required-reusable.yml
 
-  ci:
-    name: CI
+  database-parse:
     if: always()
+    name: CI - SQL Parser
     needs: global-environment
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6.0.1
-      - uses: ./.github/workflows/resources/actions/setup-build-environment
-      - name: Build and Run Tests
-        run: ./mvnw clean install -T1C -B -ntp -fae
+    timeout-minutes: 90
     strategy:
+      max-parallel: 15
+      fail-fast: false
       matrix:
+        database: [mysql, postgresql]
         os:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6.0.1
+      - uses: ./.github/workflows/resources/actions/setup-build-environment
+        with:
+          cache-prefix: ${{ needs.global-environment.outputs.GLOBAL_CACHE_PREFIX }}
+      - name: Build Project with Maven
+        run: ./mvnw -T1C -B -ntp clean install
+      - name: Run SQL Parser
+        continue-on-error: true
+        run: ./mvnw -nsu -B install -f parser/sql/dialect/${{ matrix.database }}/pom.xml 
+          -Dsql.parser.external.it.enabled=true
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sql-report-${{ matrix.database }}
+          path: /tmp/*.csv
