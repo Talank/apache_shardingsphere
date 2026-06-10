@@ -17,10 +17,7 @@
 name: publish-docker
 
 on:
-  push:
-    branches:
-      - master
-
+  workflow_dispatch:
 env:
   SKIP_TEST: true
   HUB: ghcr.io/apache/shardingsphere
@@ -28,7 +25,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'apache/shardingsphere'
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -66,3 +63,5 @@ jobs:
         run: docker tag ${{ env.PROXY }}:PER_COMMIT ${{ env.PROXY }}:${{ github.sha }}
       - name: Build and push docker images
         run: docker push ${{ env.PROXY }}:${{ github.sha }}
+    strategy:
+      fail-fast: false

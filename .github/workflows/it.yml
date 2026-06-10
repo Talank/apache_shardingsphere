@@ -18,17 +18,16 @@
 name: Integration Test
 
 on:
-  push:
-    branches: [ master, dev ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dmaven.javadoc.skip=true -Drat.skip=true -Djacoco.skip=true -Dcheckstyle.skip=true
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3 -Dmaven.javadoc.skip=true -Drat.skip=true -Djacoco.skip=true 
+    -Dcheckstyle.skip=true
 
 jobs:
   it-empty-rule:
@@ -38,10 +37,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [ docker ]
-        adapter: [ proxy, jdbc ]
-        database: [ MySQL, PostgreSQL ]
-        scenario: [ empty_rules ]
+        env: [docker]
+        adapter: [proxy, jdbc]
+        database: [MySQL, PostgreSQL]
+        scenario: [empty_rules]
     steps:
       - name: Cache Maven Repos
         uses: actions/cache@v2
@@ -57,10 +56,15 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Build Project
-        run: ./mvnw -B clean install -am -pl shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker -DskipTests
+        run: ./mvnw -B clean install -am -pl 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker 
+          -DskipTests
       - name: Run Integration Test
-        run: ./mvnw -B install -f shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} -Dit.cluster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
-  
+        run: ./mvnw -B install -f 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml 
+          -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} 
+          -Dit.cluster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
+
   it-single-rule:
     name: single rule
     needs: it-empty-rule
@@ -69,10 +73,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [ docker ]
-        adapter: [ proxy, jdbc ]
-        database: [ MySQL, PostgreSQL ]
-        scenario: [ db, tbl, encrypt, readwrite_splitting, shadow ]
+        env: [docker]
+        adapter: [proxy, jdbc]
+        database: [MySQL, PostgreSQL]
+        scenario: [db, tbl, encrypt, readwrite_splitting, shadow]
     steps:
       - name: Cache Maven Repos
         uses: actions/cache@v2
@@ -88,22 +92,27 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Build Project
-        run: ./mvnw -B clean install -am -pl shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker -DskipTests
+        run: ./mvnw -B clean install -am -pl 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker 
+          -DskipTests
       - name: Run Integration Test
-        run: ./mvnw -B install -f shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} -Dit.culster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
-  
+        run: ./mvnw -B install -f 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml 
+          -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} 
+          -Dit.culster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
+
   it-mixture-rule:
     name: mixture rule
-    needs: [ it-empty-rule, it-single-rule ]
+    needs: [it-empty-rule, it-single-rule]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        env: [ docker ]
-        adapter: [ proxy, jdbc ]
-        database: [ MySQL, PostgreSQL ]
-        scenario: [ dbtbl_with_readwrite_splitting, dbtbl_with_readwrite_splitting_and_encrypt ]
+        env: [docker]
+        adapter: [proxy, jdbc]
+        database: [MySQL, PostgreSQL]
+        scenario: [dbtbl_with_readwrite_splitting, dbtbl_with_readwrite_splitting_and_encrypt]
     steps:
       - name: Cache Maven Repos
         uses: actions/cache@v2
@@ -119,10 +128,15 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Build Project
-        run: ./mvnw -B clean install -am -pl shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker -DskipTests
+        run: ./mvnw -B clean install -am -pl 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite -Pit.env.docker 
+          -DskipTests
       - name: Run Integration Test
-        run: ./mvnw -B install -f shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} -Dit.cluster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
-  
+        run: ./mvnw -B install -f 
+          shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml 
+          -Dit.run.modes=Cluster -Dit.scenarios=${{ matrix.scenario }} -Dit.cluster.adapters=${{ matrix.adapter }} 
+          -Dit.cluster.databases=${{ matrix.database }} -Dit.cluster.env.type=DOCKER
+
   mysql-proxy-agent-metrics:
     name: MySQL-Proxy with Agent Metrics
     runs-on: ubuntu-latest
@@ -147,8 +161,12 @@ jobs:
       - name: Build Project
         run: ./mvnw -B clean install -DskipITs -DskipTests
       - name: Run Integration Test
-        run: ./mvnw -B clean install -f shardingsphere-test/shardingsphere-integration-agent-test/shardingsphere-integration-agent-test-plugins/shardingsphere-integration-agent-test-metrics/pom.xml -Pit.env.metrics
-  
+        run: ./mvnw -B clean install -f 
+          shardingsphere-test/shardingsphere-integration-agent-test/shardingsphere-integration-agent-test-plugins/shardingsphere-integration-agent-test-metrics/pom.xml
+          -Pit.env.metrics
+
+    strategy:
+      fail-fast: false
   mysql-proxy-agent-tracing-opentelemetry:
     name: MySQL-Proxy with Agent Tracing OpenTelemetry
     runs-on: ubuntu-latest
@@ -169,4 +187,8 @@ jobs:
       - name: Build Project
         run: ./mvnw -B clean install -DskipITs -DskipTests
       - name: Run Integration Test
-        run: ./mvnw -B clean install -f shardingsphere-test/shardingsphere-integration-agent-test/shardingsphere-integration-agent-test-plugins/shardingsphere-integration-agent-test-opentelemetry/pom.xml -Pit.env.opentelemetry
+        run: ./mvnw -B clean install -f 
+          shardingsphere-test/shardingsphere-integration-agent-test/shardingsphere-integration-agent-test-plugins/shardingsphere-integration-agent-test-opentelemetry/pom.xml
+          -Pit.env.opentelemetry
+    strategy:
+      fail-fast: false
